@@ -211,4 +211,8 @@
            (cons "https://www.gn\N{LEFT-TO-RIGHT ISOLATE}u.org/"
                  "https://gn\N{LEFT-TO-RIGHT ISOLATE}u.org"))))
 
+(ert-deftest test-invalid-email ()
+  (should (textsec-suspicious-p "undisclosed recipients;"
+                                'email-address-header)))
+
 ;;; textsec-tests.el ends here

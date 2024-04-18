@@ -416,7 +416,11 @@ and `textsec-name-suspicious-p'."
                      (mail-header-parse-address email t)
                    (error (throw 'end "Email address can't be parsed.")))))
       (or
-       (textsec-email-address-suspicious-p  address)
+       ;; If we can't parse the address (because it's not valid at
+       ;; all), then it's suspicious.
+       (and (not address)
+            "Email address can't be parsed.")
+       (textsec-email-address-suspicious-p address)
        (and name (textsec-name-suspicious-p name))))))
 
 (defun textsec-url-suspicious-p (url)
