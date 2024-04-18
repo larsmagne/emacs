@@ -49,7 +49,7 @@
    (eq (url-cache--http-expiry-status (ert-resource-file "expired.bin"))
        t))
   (should-not
-   (eq (url-cache--http-expiry-status (ert-resourcpe-file "not-expired.bin"))
+   (eq (url-cache--http-expiry-status (ert-resource-file "not-expired.bin"))
        t)))
 
 ;;; url-cache-tests.el ends here
