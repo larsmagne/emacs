@@ -35,10 +35,23 @@
 
 (defcustom url-cache-expire-time 3600
   "Default maximum time in seconds before cache files expire.
-Used by the function `url-cache-expired'."
+Used by the function `url-cache-expired'.  Also see
+`url-cache-respect-headers'."
   :version "24.1"
   :type 'natnum
-  :group 'url-cache)
+  :group 'url-group)
+
+(defcustom url-cache-respect-headers t
+  "If non-nil, respect Expires and Cache-Control HTTP headers.
+This will make cache expiry slower as each file will have to be
+inspected, while `url-cache-expire-time' just looks at
+modification times.
+
+If there are no caching headers in the documents,
+`url-cache-expire-time' will be respected."
+  :version "29.1"
+  :type 'bool
+  :group 'url-group)
 
 ;; Cache manager
 (defun url-cache-file-writable-p (file)
@@ -199,15 +212,23 @@ Very fast if you have an `md5' primitive function, suitably fast otherwise."
   "Return non-nil if a cached URL is older than EXPIRE-TIME seconds.
 The default value of EXPIRE-TIME is `url-cache-expire-time'.
 If `url-standalone-mode' is non-nil, cached items never expire."
-  (if url-standalone-mode
-      (not (file-exists-p (url-cache-create-filename url)))
-    (let ((cache-time (url-is-cached url)))
-      (or (not cache-time)
-	  (time-less-p
-	   (time-add
-	    cache-time
-	    (or expire-time url-cache-expire-time))
-	   nil)))))
+  (let ((file (url-cache-create-filename url)))
+    (if url-standalone-mode
+        (not (file-exists-p file))
+      (let ((status (if url-cache-respect-headers
+                        (url-cache--http-expiry-status file)
+                      'unknown)))
+        ;; If the file didn't say what the status was, or we're just
+        ;; using timestamps, check the timestamp.
+        (if (not (eq status 'unknown))
+            status
+          (let ((cache-time (url-is-cached url)))
+            (or (not cache-time)
+	        (time-less-p
+	         (time-add
+	          cache-time
+	          (or expire-time url-cache-expire-time))
+	         nil))))))))
 
 (defun url-cache-prune-cache (&optional directory)
   "Remove all expired files from the cache.
@@ -221,21 +242,69 @@ considered \"expired\"."
       (dolist (file (directory-files directory t))
 	(unless (member (file-name-nondirectory file) '("." ".."))
 	  (setq total-files (1+ total-files))
-	  (cond
-	   ((file-directory-p file)
-	    (when (url-cache-prune-cache file)
-	      (setq deleted-files (1+ deleted-files))))
-	   ((time-less-p
-	     (time-add
-	      (file-attribute-modification-time (file-attributes file))
-	      url-cache-expire-time)
-	     now)
-	    (delete-file file)
-	    (setq deleted-files (1+ deleted-files))))))
+	  (if (file-directory-p file)
+	      (when (url-cache-prune-cache file)
+	        (setq deleted-files (1+ deleted-files)))
+            (let ((status (if url-cache-respect-headers
+                              (url-cache--http-expiry-status file)
+                            'unknown)))
+              (when (or (eq status t)
+                        (and (eq status 'unknown)
+	                     (time-less-p
+	                      (time-add
+	                       (file-attribute-modification-time
+                                (file-attributes file))
+	                       url-cache-expire-time)
+	                      now)))
+	        (delete-file file)
+	        (setq deleted-files (1+ deleted-files)))))))
       (if (< deleted-files total-files)
 	  nil
 	(delete-directory directory)
 	t))))
+
+(defun url-cache--http-expiry-status (file)
+  "Say whether FILE is expired based on the HTTP headers in FILE.
+There are three possible values: nil, t and `unknown'.  The
+latter if there are no cache control headers in FILE."
+  (with-temp-buffer
+    (set-buffer-multibyte nil)
+    (let* ((atts (file-attributes file))
+           (size (file-attribute-size atts))
+           (case-fold-search t)
+           (start 0))
+      ;; Get the entire header.
+      (while (and (or (zerop start)
+                      (not (re-search-forward "^$" nil t)))
+                  (< start size))
+        (goto-char (point-max))
+        (insert-file-contents file nil 0 (min 1024 size))
+        (setq start (+ start 1024)))
+      (goto-char (point-min))
+      (cond
+       ((not (re-search-forward "^$" nil t))
+        'unknown)
+       ((save-excursion
+          (re-search-backward "^cache-control: \\(.*\\)" nil t))
+        (url-cache--cache-control-expired-p
+         (match-string 1) (file-attribute-modification-time atts)))
+       ((re-search-backward "^expires: \\(.*\\)" nil t)
+        (url-cache--expires-expired-p (match-string 1)))
+       (t 'unknown)))))
+
+(defun url-cache--cache-control-expired-p (string file-time)
+  ;; The string is something like "public, max-age=31536000".
+  (seq-some
+   (lambda (elem)
+     (and (string-match "max-age=\\([0-9]+\\)" elem)
+          (< (+ (string-to-number (match-string 1 elem))
+                (time-convert file-time 'integer))
+             (time-convert (current-time) 'integer))))
+   (split-string string ",")))
+
+(defun url-cache--expires-expired-p (date)
+  (time-less-p (encode-time (parse-time-string date))
+               (current-time)))
 
 (provide 'url-cache)
 
