@@ -274,11 +274,10 @@ latter if there are no cache control headers in FILE."
            (case-fold-search t)
            (start 0))
       ;; Get the entire header.
-      (while (and (or (zerop start)
-                      (not (re-search-forward "^$" nil t)))
+      (while (and (not (re-search-forward "^\n" nil t))
                   (< start size))
         (goto-char (point-max))
-        (insert-file-contents file nil 0 (min 1024 size))
+        (insert-file-contents file nil start (min (+ 1024 start) size))
         (setq start (+ start 1024)))
       (goto-char (point-min))
       (cond
