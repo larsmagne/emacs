@@ -299,7 +299,7 @@ If it can't be found, return nil and don't move point."
         (error "Can't find the old object"))
       (setcar (cdr objects) object))
     ;; Then update the cache...
-    (let* ((line-number (seq-position old-object (car (vtable--cache table))))
+    (let* ((line-number (seq-position (vtable-objects table) old-object))
            (line (elt (car (vtable--cache table)) line-number)))
       (unless line
         (error "Can't find cached object"))
