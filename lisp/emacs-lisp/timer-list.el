@@ -83,9 +83,11 @@
 
 (defvar-keymap timer-list-mode-map
   "c" #'timer-list-cancel
+  "t" #'timer-list-alter-timeout
   :menu
   '("Timers"
-    ["Cancel" timer-list-cancel t]
+    ["Cancel" timer-list-cancel (timer-list--current)]
+    ["Alter" timer-list-alter-timeout (timer-list--current)]
     ["Quit" quit-window]))
 
 (define-derived-mode timer-list-mode tabulated-list-mode "Timer-List"
@@ -128,13 +130,29 @@
 (defun timer-list-cancel ()
   "Cancel the timer on the line under point."
   (interactive)
-  (let ((timer (get-text-property (line-beginning-position) 'timer))
+  (let ((timer (timer-list--current))
         (inhibit-read-only t))
     (unless timer
       (error "No timer on the current line"))
     (cancel-timer timer)
     (delete-region (line-beginning-position)
                    (line-beginning-position 2))))
+
+(defun timer-list--current ()
+  "Return the timer under point."
+  (get-text-property (line-beginning-position) 'timer))
+
+(defun timer-list-alter-timeout (new-timeout)
+  "Alter the timeout of the timer under point."
+  (interactive "nNext timeout (in seconds): ")
+  (let ((timer (timer-list--current))
+        (new-time
+         (time-convert
+          (+ (time-convert (current-time) 'integer) new-timeout)
+          'list)))
+    (unless timer
+      (error "No timer on the current line"))
+    (setf (timer--time timer) new-time)))
 
 (provide 'timer-list)
 
