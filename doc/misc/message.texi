@@ -927,6 +927,9 @@ top.  The @code{message-screenshot-command} variable says what
 external command to use to take the screenshot.  It defaults to
 @code{"import png:-"}, which is an ImageMagick command.
 
+This variable can also be a function, which will be called with zero
+parameters.  It should insert the image into the current buffer.
+
 You can also create arbitrarily complex multiparts using the @acronym{MML}
 language (@pxref{Composing, , Composing, emacs-mime, The Emacs MIME
 Manual}).

@@ -313,9 +313,17 @@ any confusion."
 
 (defcustom message-screenshot-command '("import" "png:-")
   "Command to take a screenshot.
-The command should insert a PNG in the current buffer."
+This can either be a list of strings to be executed as a command,
+or a function to be called (with zero parameters).  An example
+function is `message-screenshot-gnome', which will perform a
+screenshot under Wayland Gnome.
+
+The command/function should insert a PNG image in the current
+buffer."
   :group 'message-various
-  :type '(repeat string)
+  :type '(choice
+          (repeat string)
+          function)
   :version "28.1")
 
 ;;; Start of variables adopted from `message-utils.el'.
@@ -8883,6 +8891,16 @@ Used in `message-simplify-recipients'."
 			   (* 0.5 (- (nth 3 edges) (nth 1 edges)))))
 	     string)))))))
 
+(defun message-screenshot-gnome ()
+  "Do a screenshot under Wayland Gnome."
+  (let ((file (concat (make-temp-file "/tmp/message-screenshot") ".png")))
+    (unwind-protect
+	(call-process "gnome-screenshot" nil nil nil
+		      "-a" "-f" file)
+      (when (file-exists-p file)
+	(insert-file-contents-literally file)
+	(delete-file file)))))
+
 (defun message-insert-screenshot (delay)
   "Take a screenshot and insert in the current buffer.
 DELAY (the numeric prefix) says how many seconds to wait before
@@ -8891,7 +8909,8 @@ starting the screenshotting process.
 The `message-screenshot-command' variable says what command is
 used to take the screenshot."
   (interactive "p" message-mode)
-  (unless (executable-find (car message-screenshot-command))
+  (when (and (consp message-screenshot-command)
+             (executable-find (car message-screenshot-command)))
     (error "Can't find %s to take the screenshot"
 	   (car message-screenshot-command)))
   (cl-decf delay)
@@ -8907,9 +8926,11 @@ used to take the screenshot."
   (let ((image
 	 (with-temp-buffer
 	   (set-buffer-multibyte nil)
-	   (apply #'call-process
-		  (car message-screenshot-command) nil (current-buffer) nil
-		  (cdr message-screenshot-command))
+           (if (consp message-screenshot-command)
+	       (apply #'call-process
+		      (car message-screenshot-command) nil (current-buffer) nil
+		      (cdr message-screenshot-command))
+             (funcall message-screenshot-command))
 	   (buffer-string))))
     (message--yank-media-image-handler 'image/png image)
     (message "")))
