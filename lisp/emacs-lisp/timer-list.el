@@ -152,7 +152,8 @@
           'list)))
     (unless timer
       (error "No timer on the current line"))
-    (setf (timer--time timer) new-time)))
+    (setf (timer--time timer) new-time
+          (timer--triggered timer) nil)))
 
 (provide 'timer-list)
 
