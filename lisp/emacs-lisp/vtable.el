@@ -300,7 +300,7 @@ If it can't be found, return nil and don't move point."
       (setcar (cdr objects) object))
     ;; Then update the cache...
     (let* ((line-number (seq-position (vtable-objects table) old-object))
-           (line (elt (car (vtable--cache table)) line-number)))
+           (line (elt (car (vtable--ensure-cache table)) line-number)))
       (unless line
         (error "Can't find cached object"))
       (setcar line object)
@@ -326,7 +326,7 @@ This will also remove the displayed line."
   ;; First remove from the objects.
   (setf (vtable-objects table) (delq object (vtable-objects table)))
   ;; Then adjust the cache and display.
-  (let ((cache (vtable--cache table))
+  (let ((cache (vtable--ensure-cache table))
         (inhibit-read-only t))
     (setcar cache (delq (assq object (car cache)) (car cache)))
     (save-excursion
@@ -350,7 +350,7 @@ This also updates the displayed table."
   ;; Then adjust the cache and display.
   (save-excursion
     (vtable-goto-table table)
-    (let* ((cache (vtable--cache table))
+    (let* ((cache (vtable--ensure-cache table))
            (inhibit-read-only t)
            (keymap (get-text-property (point) 'keymap))
            (ellipsis (if (vtable-ellipsis table)
