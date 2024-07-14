@@ -113,9 +113,13 @@ image data.")
 (defun image-cut (&optional color)
   "Cut a rectangle from the image under point, filling it with COLOR.
 COLOR defaults to the value of `image-cut-color'.
-Interactively, with prefix argument, prompt for COLOR to use."
+
+Interactively, with prefix argument, prompt for COLOR to use, and
+set `image-cut-color' to that color."
   (interactive (list (and current-prefix-arg (read-color "Use color: "))))
-  (image-crop (if (zerop (length color)) image-cut-color color)))
+  (image-crop (if (zerop (length color))
+                  image-cut-color
+                (setq image-cut-color color))))
 
 ;;;###autoload
 (defun image-crop (&optional cut)
