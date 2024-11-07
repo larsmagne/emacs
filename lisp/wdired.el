@@ -108,6 +108,12 @@ In systems without symbolic links support, this variable has no effect
 at all."
   :type 'boolean)
 
+(defcustom wdired-revert-after-edit nil
+  "If non-nil, revert (re-read) buffer after editing.
+This will often mean that you lose track of where you were in the
+buffer."
+  :type 'boolean)
+
 (defcustom wdired-allow-to-change-permissions nil
   "If non-nil, the permissions bits of the files are editable.
 
@@ -556,7 +562,8 @@ non-nil means return old filename."
                                  collect (or (assoc-default f files-renamed)
                                              f))))))
 	  ;; Re-sort the buffer.
-	  (revert-buffer)
+          (when wdired-revert-after-edit
+	    (revert-buffer))
 	  (let ((inhibit-read-only t))
 	    (dired-mark-remembered wdired--old-marks)))
       (let ((inhibit-read-only t))
