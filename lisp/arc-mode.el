@@ -1250,7 +1250,10 @@ NEW-NAME."
 		   nil
 		   `(:file ,stdout-file)
 		   nil
-                   `(,archive ,name ,@(cdr command) ,dest))
+                   ;; unar handles [ and ] characters especially, and then therefore
+                   ;; have to be escaped.
+                   `(,archive ,(replace-regexp-in-string "[][]" "\\\\\\&" name)
+                              ,@(cdr command) ,dest))
 	  (with-temp-buffer
 	    (insert-file-contents stdout-file)
 	    (goto-char (point-min))
