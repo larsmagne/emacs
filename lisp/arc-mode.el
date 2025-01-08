@@ -998,7 +998,8 @@ using `make-temp-file', and the generated name is returned."
       (unless (memq coding '(nil no-conversion))
         (decode-coding-region (point-min) (point-max) coding)
 	(setq last-coding-system-used coding))
-      (set-buffer-modified-p nil)
+      (let ((create-lockfiles nil))
+        (set-buffer-modified-p nil))
       (kill-local-variable 'buffer-file-coding-system)
       (after-insert-file-set-coding (- (point-max) (point-min))))))
 

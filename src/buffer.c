@@ -1471,7 +1471,7 @@ state of the current buffer.  Use with care.  */)
     ? current_buffer->base_buffer
     : current_buffer;
 
-  if (!inhibit_modification_hooks)
+  if (!inhibit_modification_hooks && create_lockfiles)
     {
       Lisp_Object fn = BVAR (b, file_truename);
       /* Test buffer-file-name so that binding it to nil is effective.  */
