@@ -423,6 +423,7 @@ After cropping an image, you can save it by `M-x image-save' or
 	     (point-min) (point-max) "exiftool"
              t (list (current-buffer) nil) nil
 	     "-Orientation#=0"
+	     "-CameraOrientation#=0"
 	     "-o" "-" "-")))))
       (when (image-property image :width)
         (image-crop--process
