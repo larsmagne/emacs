@@ -2218,6 +2218,14 @@ Return the server's response to the SELECT or EXAMINE command."
 		  ;; Don't copy if the message is already in its
 		  ;; target group.
 		  (unless (string= group nnimap-inbox)
+                    ;; If we're also splitting Seen messages, make
+                    ;; sure they're unseen first, otherwise they won't
+                    ;; really show up in the *Group* buffer.
+                    (unless (memq '%Seen nnimap-unsplittable-articles)
+                      (push
+                       (nnimap-command "UID STORE %s -FLAGS.SILENT (\\Seen)"
+		                       (nnimap-article-ranges ranges))
+                       sequences))
 		    (push (list (nnimap-send-command
 				 (if can-move
 				     "UID MOVE %s %S"
