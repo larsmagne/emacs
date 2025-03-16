@@ -158,6 +158,8 @@ non-supported selection data types."
     (let ((coding-system (yank-media--utf-16-p data)))
       (if coding-system
           (decode-coding-string data coding-system)
+        ;; If not, it's almost always utf-8.
+        (setq data (decode-coding-string data 'utf-8))
         ;; Some programs add a nul character at the end of text/*
         ;; selections.  Remove that.
         (if (zerop (elt data (1- (length data))))
