@@ -57,6 +57,9 @@
    (displayer :initarg :displayer :accessor vtable-displayer)
    (use-header-line :initarg :use-header-line
                     :accessor vtable-use-header-line)
+   (comparitor :initarg :comparitor
+               :accessor vtable-comparitor
+               :initform #'eq)
    (face :initarg :face :accessor vtable-face)
    (actions :initarg :actions :accessor vtable-actions)
    (keymap :initarg :keymap :accessor vtable-keymap)
@@ -90,6 +93,7 @@
                             formatter
                             displayer
                             (use-header-line t)
+                            (comparitor #'eq)
                             (face 'vtable)
                             actions keymap
                             (separator-width 1)
@@ -118,6 +122,7 @@ See info node `(vtable)Top' for vtable documentation."
           :formatter formatter
           :displayer displayer
           :use-header-line use-header-line
+          :comparitor comparitor
           :face face
           :actions actions
           :keymap keymap
@@ -255,14 +260,15 @@ See info node `(vtable)Top' for vtable documentation."
 Return the position of the object if found, and nil if not."
   (let ((start (point)))
     (vtable-beginning-of-table)
-    (save-restriction
-      (narrow-to-region (point) (save-excursion (vtable-end-of-table)))
-      (if (text-property-search-forward 'vtable-object object #'eq)
-          (progn
-            (forward-line -1)
-            (point))
-        (goto-char start)
-        nil))))
+    (let ((predicate (vtable-comparitor (vtable-current-table))))
+      (save-restriction
+        (narrow-to-region (point) (save-excursion (vtable-end-of-table)))
+        (if (text-property-search-forward 'vtable-object object predicate)
+            (progn
+              (forward-line -1)
+              (point))
+          (goto-char start)
+          nil)))))
 
 (defun vtable-goto-table (table)
   "Go to TABLE in the current buffer.

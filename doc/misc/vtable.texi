@@ -382,6 +382,13 @@ case, but if there's other text in the buffer before the table, or
 there are several tables in the same buffer, then this should be
 @code{nil}.
 
+@item :comparitor
+The function to use to compare two objects.  This is used, for
+instance, when reverting (i.e., updating) a table, so that we put
+point near where it originally was.  The function takes two
+parameters, which are the two objects to be compared.  The default is
+@code{eq}.
+
 @item :face
 The face to be used.  This defaults to @code{vtable}.  This face
 doesn't override the faces in the data, or the faces supplied by the
