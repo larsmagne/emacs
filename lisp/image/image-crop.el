@@ -77,9 +77,23 @@ The following `format-spec' elements are allowed:
 %t: Top.
 %w: Width.
 %h: Height.
-%f: Result file type."
+%f: Result file type.
+
+Also see `image-crop-pixel-command'."
   :type '(repeat string)
   :version "29.1")
+
+(defcustom image-crop-pixel-command '("convert" "-" "-format" "%%[hex:p{%x,%y}]"
+                                      "info:")
+  "Command to get the color value of a pixel.
+The command should return a value to be used as a color value for
+`image-crop-cut-command'.
+
+The following `format-spec' elements are allowed:
+%x: X position.
+%y: Y position."
+  :type '(repeat string)
+  :version "31.1")
 
 (defcustom image-crop-rotate-command '("convert" "-rotate" "%r" "-" "%f:-")
   "Command to rotate an image.
@@ -117,16 +131,22 @@ COLOR defaults to the value of `image-cut-color'.
 Interactively, with prefix argument, prompt for COLOR to use, and
 set `image-cut-color' to that color."
   (interactive (list (and current-prefix-arg (read-color "Use color: "))))
-  (image-crop (if (zerop (length color))
-                  image-cut-color
-                (setq image-cut-color color))))
+  (image-crop (cond
+               ((not color)
+                image-cut-color)
+               ((equal color "")
+                'pick)
+               (t
+                (setq image-cut-color color)))))
 
 ;;;###autoload
 (defun image-crop (&optional cut)
   "Crop the image under point.
 If CUT is non-nil, remove a rectangle from the image instead of
 cropping the image.  In that case CUT should be the name of a
-color to fill the rectangle.
+color to fill the rectangle.  It can also be the symbol `pick',
+in which case the command will pick a nearby color from the area
+around the cut.
 
 While cropping the image, the following key bindings are available:
 
@@ -239,6 +259,11 @@ After cropping an image, you can save it by `M-x image-save' or
      (with-temp-buffer
        (set-buffer-multibyte nil)
        (insert data)
+       ;; Determine the color to use.
+       (when (eq cut 'pick)
+         (setq cut (image-crop--pick-color
+                    (min left (- (car osize) width))
+                    (min top (- (cdr osize) height)))))
        (if cut
 	   (image-crop--process image-crop-cut-command
                                 `((?l . ,left)
@@ -255,6 +280,22 @@ After cropping an image, you can save it by `M-x image-save' or
                                 (?f . ,(cadr (split-string type "/"))))))
        (buffer-string))
      text)))
+
+(defun image-crop--pick-color (x y)
+  (let ((command (mapcar
+                  (lambda (bit)
+                    (format-spec bit `((?x . ,x)
+                                       (?y . ,y))))
+                  image-crop-pixel-command))
+        (obuf (generate-new-buffer " *image crop temp*")))
+    (unwind-protect
+        (progn
+          (apply #'call-process-region
+                 (point-min) (point-max) (car command)
+                 nil obuf nil (cdr command))
+          (with-current-buffer obuf
+            (concat "#" (buffer-string))))
+      (kill-buffer obuf))))
 
 (defun image-crop--width (area)
   (- (plist-get area :right) (plist-get area :left)))
