@@ -664,6 +664,10 @@ should be shown to the user."
        ;; 307 Temporary redirect
        (let ((redirect-uri (or (mail-fetch-field "Location")
 			       (mail-fetch-field "URI"))))
+         (when (and redirect-uri
+                    (not (member (url-type (url-generic-parse-url redirect-uri))
+                                 '("http" "https" "file"))))
+           (setq redirect-uri nil))
 	 (pcase status-symbol
 	   ('multiple-choices	    ; 300
 	    ;; Quoth the spec (section 10.3.1)
