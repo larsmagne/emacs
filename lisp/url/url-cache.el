@@ -302,8 +302,9 @@ latter if there are no cache control headers in FILE."
    (split-string string ",")))
 
 (defun url-cache--expires-expired-p (date)
-  (time-less-p (encode-time (parse-time-string date))
-               (current-time)))
+  (let ((expiry (ignore-errors (encode-time (parse-time-string date)))))
+    (and expiry
+         (time-less-p expiry (current-time)))))
 
 (provide 'url-cache)
 
