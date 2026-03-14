@@ -216,7 +216,7 @@ that was fetched."
   (lambda (arg)
     (gnus-async-article-callback arg group article mark summary next)))
 
-(defcustom gnus-prefect-images t
+(defcustom gnus-prefetch-images t
   "Whether to asynchronously prefetch images from other articles."
   :version "31.1"
   :type 'boolean)
@@ -239,7 +239,7 @@ that was fetched."
 	      (gnus-agent-store-article article group)))
 	  ;; Prefetch images for the groups that want that.
 	  (when (and (fboundp 'gnus-html-prefetch-images)
-                     gnus-prefect-images)
+                     gnus-prefetch-images)
 	    (gnus-html-prefetch-images summary))
 	  (when gnus-async-post-fetch-function
 	    (funcall gnus-async-post-fetch-function summary))))
