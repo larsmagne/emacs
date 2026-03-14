@@ -245,7 +245,7 @@ See info node `(vtable)Top' for vtable documentation."
 
 (defun vtable-beginning-of-table ()
   "Go to the start of the current table."
-  (if (text-property-search-backward 'vtable (vtable-current-table))
+  (if (text-property-search-backward 'vtable (vtable-current-table) #'eq)
       (point)
     (goto-char (point-min))))
 
