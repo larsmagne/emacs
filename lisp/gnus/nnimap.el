@@ -2080,8 +2080,10 @@ Return the server's response to the SELECT or EXAMINE command."
        nil))))
 
 (defun nnimap-parse-response ()
-  (let ((lines (split-string (nnimap-last-response-string) "\r\n" t))
-	result)
+  (let* ((response-string (nnimap-last-response-string))
+         (lines (split-string response-string "\r\n" t))
+	 result)
+    (nnimap-log-command response-string)
     (dolist (line lines)
       (push (cdr (nnimap-parse-line line)) result))
     ;; Return the OK/error code first, and then all the "continuation
@@ -2250,6 +2252,9 @@ Return the server's response to the SELECT or EXAMINE command."
               (nnimap-delete-article junk-articles))))))))
 
 (defun nnimap-parse-copied-articles (sequences)
+  (when nnimap-record-commands
+    (nnimap-log-command (format "Parse Copied: %S" sequences))
+    (nnimap-log-command (buffer-string)))
   (let (sequence copied range)
     (goto-char (point-min))
     (while (re-search-forward "^\\([0-9]+\\) OK\\b" nil t)
