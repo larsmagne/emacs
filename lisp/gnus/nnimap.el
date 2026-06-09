@@ -2224,10 +2224,9 @@ Return the server's response to the SELECT or EXAMINE command."
                     ;; sure they're unseen first, otherwise they won't
                     ;; really show up in the *Group* buffer.
                     (unless (memq '%Seen nnimap-unsplittable-articles)
-                      (push
-                       (nnimap-command "UID STORE %s -FLAGS.SILENT (\\Seen)"
-		                       (nnimap-article-ranges ranges))
-                       sequences))
+                      (nnimap-send-command
+                       "UID STORE %s -FLAGS.SILENT (\\Seen)"
+		       (nnimap-article-ranges ranges)))
 		    (push (list (nnimap-send-command
 				 (if can-move
 				     "UID MOVE %s %S"
