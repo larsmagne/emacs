@@ -411,16 +411,16 @@ This also updates the displayed table."
     (elt object index))))
 
 (defun vtable--compute-columns (table)
-  (let ((numerical (make-vector (length (vtable-columns table)) t))
-        (columns (vtable-columns table)))
+  (let ((numerical (make-vector (length (vtable-columns table)) t)))
     ;; First determine whether there are any all-numerical columns.
-    (dolist (object (vtable-objects table))
-      (seq-do-indexed
-       (lambda (_elem index)
-         (unless (numberp (vtable--get-value object index (elt columns index)
-                                             table))
-           (setf (elt numerical index) nil)))
-       (vtable-columns table)))
+    (cl-loop with columns = (vtable-columns table)
+             for index from 0 upto (1- (length columns))
+             do (cl-loop for object in (vtable-objects table)
+                         unless (numberp (vtable--get-value object index
+                                                            (elt columns index)
+                                                            table))
+                         ;; Stop as soon as we have one non-numerical value.
+                         return (setf (elt numerical index) nil)))
     ;; Then fill in defaults.
     (seq-map-indexed
      (lambda (column index)
